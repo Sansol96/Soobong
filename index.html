@@ -284,8 +284,18 @@ footer .mono{font-family:var(--mono);font-size:11px}
    구글 스프레드시트 연결
    시트에 행을 더하면 이 화면에도 그대로 나옵니다.
    (구글이 몇 분간 내용을 저장해 두므로 바로 안 보일 수 있어요)
+
+   주소를 둘 준비해 두고 되는 쪽을 씁니다.
+   ① gviz  — 중간에 다른 서버를 거치지 않아 잘 끊기지 않습니다
+   ② 게시 CSV — 예비
    ───────────────────────────────────────────── */
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgus2eIFKPFBdoHe4x24PSYsFu9F7cGS_as18gR3-iOWDw0VYYYHppHlT6qG6guj_ispugSHIQ3b3t/pub?output=csv';
+const SHEET_ID  = '1qYSG-z1qeRmB0NwDPXcmBcG1ZK9xQcctbl-q6yndIVY';
+const SHEET_GID = '0';
+const SHEET_URLS = [
+  'https://docs.google.com/spreadsheets/d/'+SHEET_ID+
+    '/gviz/tq?tqx=out:csv&headers=1&gid='+SHEET_GID,
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRgus2eIFKPFBdoHe4x24PSYsFu9F7cGS_as18gR3-iOWDw0VYYYHppHlT6qG6guj_ispugSHIQ3b3t/pub?output=csv'
+];
 
 /* CSV 읽기 — 따옴표 안의 쉼표·줄바꿈·겹따옴표를 모두 견딘다 */
 function parseCSV(text){
@@ -543,20 +553,19 @@ $q.addEventListener('input',e=>{
 function setStatus(html){ $list.innerHTML='<div class="status">'+html+'</div>'; }
 
 async function fetchSheet(){
-  /* 구글이 no-store 요청을 거부할 때가 있어, 주소에 시각을 붙여 새로 받는다 */
-  const tries=[
-    SHEET_URL+(SHEET_URL.includes('?')?'&':'?')+'_t='+Date.now(),
-    SHEET_URL
-  ];
-  let last;
-  for(const u of tries){
+  const errs=[];
+  for(const base of SHEET_URLS){
+    const url=base+(base.includes('?')?'&':'?')+'_t='+Date.now();
     try{
-      const r=await fetch(u);
-      if(r.ok) return await r.text();
-      last=new Error('HTTP '+r.status);
-    }catch(e){ last=e; }
+      const r=await fetch(url);
+      if(r.ok){
+        const t=await r.text();
+        if(t && t.trim()) return t;
+        errs.push('빈 응답');
+      } else errs.push('HTTP '+r.status);
+    }catch(e){ errs.push(String(e.message||e)); }
   }
-  throw last||new Error('불러오기 실패');
+  throw new Error(errs.join(' / '));
 }
 
 async function load(){
