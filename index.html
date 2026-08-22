@@ -593,7 +593,10 @@ async function load(){
   }
 }
 
+/* ── 방문자 세기 (GoatCounter) ── */
 load();
-</script>
+window.goatcounter = { path: function(p){ return p || location.pathname; } };</script>
+<script data-goatcounter="https://soobong.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
