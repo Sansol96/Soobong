@@ -542,13 +542,28 @@ $q.addEventListener('input',e=>{
 /* ── 불러오기 ── */
 function setStatus(html){ $list.innerHTML='<div class="status">'+html+'</div>'; }
 
+async function fetchSheet(){
+  /* 구글이 no-store 요청을 거부할 때가 있어, 주소에 시각을 붙여 새로 받는다 */
+  const tries=[
+    SHEET_URL+(SHEET_URL.includes('?')?'&':'?')+'_t='+Date.now(),
+    SHEET_URL
+  ];
+  let last;
+  for(const u of tries){
+    try{
+      const r=await fetch(u);
+      if(r.ok) return await r.text();
+      last=new Error('HTTP '+r.status);
+    }catch(e){ last=e; }
+  }
+  throw last||new Error('불러오기 실패');
+}
+
 async function load(){
   setStatus('<span class="spin"></span>질문을 불러오는 중입니다');
   $count.textContent='';
   try{
-    const res=await fetch(SHEET_URL,{cache:'no-store'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const rows=parseCSV(await res.text());
+    const rows=parseCSV(await fetchSheet());
     if(rows.length<2) throw new Error('내용이 비어 있습니다');
     DATA=buildData(rows);
     if(!DATA.length) throw new Error('공개된 질문이 없습니다');
